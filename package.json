@@ -27,9 +27,15 @@
       "electron/**/*",
       "public/fonts/**/*"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "bringcodeq15",
+      "repo": "writers-console"
+    },
     "mac": {
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "icon": "build/icon.icns",
       "category": "public.app-category.productivity",
@@ -69,6 +75,8 @@
     "dexie": "^4.4.2",
     "dexie-react-hooks": "^4.4.0",
     "docx": "^9.6.1",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.8.3",
     "file-saver": "^2.0.5",
     "nanoid": "^5.1.7",
     "react": "^18.3.1",

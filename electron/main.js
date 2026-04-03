@@ -1,7 +1,65 @@
-const { app, BrowserWindow, shell, Menu } = require('electron');
+const { app, BrowserWindow, shell, Menu, dialog } = require('electron');
 const path = require('path');
+const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
+
+// Configure logging
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
 
 let mainWindow;
+
+// --- Auto-updater events ---
+
+autoUpdater.on('checking-for-update', () => {
+  log.info('Checking for updates...');
+  mainWindow?.webContents.send('updater-status', 'checking');
+});
+
+autoUpdater.on('update-available', (info) => {
+  log.info('Update available:', info.version);
+  mainWindow?.webContents.send('updater-status', 'available', info.version);
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'Update Available',
+    message: `Writer's Console v${info.version} is available.`,
+    detail: 'It will be downloaded in the background. You will be notified when it is ready to install.',
+    buttons: ['OK'],
+  });
+});
+
+autoUpdater.on('update-not-available', () => {
+  log.info('No updates available.');
+  mainWindow?.webContents.send('updater-status', 'up-to-date');
+});
+
+autoUpdater.on('download-progress', (progress) => {
+  mainWindow?.webContents.send('updater-status', 'downloading', Math.round(progress.percent));
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  log.info('Update downloaded:', info.version);
+  mainWindow?.webContents.send('updater-status', 'ready', info.version);
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'Update Ready',
+    message: `Writer's Console v${info.version} has been downloaded.`,
+    detail: 'Restart now to apply the update?',
+    buttons: ['Restart Now', 'Later'],
+    defaultId: 0,
+  }).then((result) => {
+    if (result.response === 0) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+});
+
+autoUpdater.on('error', (err) => {
+  log.error('Update error:', err);
+  mainWindow?.webContents.send('updater-status', 'error', err.message);
+});
+
+// --- Window creation ---
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -10,7 +68,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     title: "Writer's Console",
-    titleBarStyle: 'hiddenInset', // Native macOS traffic lights, no title bar chrome
+    titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 12 },
     backgroundColor: '#111518',
     webPreferences: {
@@ -22,16 +80,13 @@ function createWindow() {
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
   });
 
-  // In development, load from Vite dev server
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // In production, load from built files
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
 
-  // Open external links in the default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) {
       shell.openExternal(url);
@@ -44,13 +99,20 @@ function createWindow() {
   });
 }
 
-// Build the application menu
+// --- Application menu ---
+
 function createMenu() {
   const template = [
     {
       label: app.name,
       submenu: [
         { role: 'about' },
+        {
+          label: 'Check for Updates...',
+          click: () => {
+            autoUpdater.checkForUpdates();
+          },
+        },
         { type: 'separator' },
         {
           label: 'Settings',
@@ -160,9 +222,18 @@ function createMenu() {
   Menu.setApplicationMenu(menu);
 }
 
+// --- App lifecycle ---
+
 app.whenReady().then(() => {
   createMenu();
   createWindow();
+
+  // Check for updates after a short delay (don't block startup)
+  if (!process.env.VITE_DEV_SERVER_URL) {
+    setTimeout(() => {
+      autoUpdater.checkForUpdatesAndNotify();
+    }, 5000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
