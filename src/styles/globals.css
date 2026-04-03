@@ -1,0 +1,194 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Charter';
+  src: url('/fonts/charter/charter-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Charter';
+  src: url('/fonts/charter/charter-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Charter';
+  src: url('/fonts/charter/charter-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Charter';
+  src: url('/fonts/charter/charter-bold-italic.woff2') format('woff2');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* CommitMonoWConsole */
+@font-face {
+  font-family: 'CommitMonoWConsole';
+  src: url('/fonts/commitmono/CommitMonoWConsole-400-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'CommitMonoWConsole';
+  src: url('/fonts/commitmono/CommitMonoWConsole-400-Italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'CommitMonoWConsole';
+  src: url('/fonts/commitmono/CommitMonoWConsole-550-Regular.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'CommitMonoWConsole';
+  src: url('/fonts/commitmono/CommitMonoWConsole-550-Italic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --font-charter: 'Charter', 'Bitstream Charter', 'Georgia', 'Cambria', 'Times New Roman', serif;
+  --font-commitmono: 'CommitMonoWConsole', 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  --font-family: var(--font-charter);
+
+  --bg-primary: #111518;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2128;
+  --bg-hover: #21262d;
+  --bg-active: #282e36;
+
+  --text-primary: #d4d2cc;
+  --text-secondary: #949088;       /* warmed from #8b949e — matches warm text palette */
+  --text-tertiary: #7d8590;        /* raised from #6e7681 — now passes WCAG AA (4.6:1) */
+  --text-heading: #e6e1d8;
+
+  --accent: #d4a051;
+  --accent-dim: #b8883f;            /* raised from #a67a3c — now passes AA on tertiary bg */
+  --accent-faint: rgba(212, 160, 81, 0.15); /* raised from 0.12 — more perceptible highlights */
+
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-emphasis: rgba(255, 255, 255, 0.12);
+
+  --color-error: #e05459;            /* raised from #d4555a — now passes AA on all backgrounds */
+  --color-success: #57ab5a;
+  --color-loading: #8b949e;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(212, 160, 81, 0.3);
+  color: var(--text-heading);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+input, textarea, select, button {
+  font-family: var(--font-family);
+}
+
+@keyframes scaffold-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+/* Milestone celebration shimmer */
+@keyframes milestone-shimmer {
+  0%   { box-shadow: inset 0 0 0 0 rgba(212, 160, 81, 0); }
+  15%  { box-shadow: inset 0 0 12px 2px rgba(212, 160, 81, 0.35); }
+  30%  { box-shadow: inset 0 0 20px 4px rgba(212, 160, 81, 0.15); }
+  100% { box-shadow: inset 0 0 0 0 rgba(212, 160, 81, 0); }
+}
+
+.milestone-shimmer {
+  animation: milestone-shimmer 2s ease-out forwards;
+}
+
+/* Completeness score glow */
+@keyframes completeness-glow {
+  0%   { text-shadow: 0 0 0 transparent; }
+  30%  { text-shadow: 0 0 8px rgba(212, 160, 81, 0.6); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+.completeness-glow {
+  animation: completeness-glow 1.5s ease-out forwards;
+}
+
+/* Flow state ambient background */
+@keyframes flow-ambient {
+  0%   { background-color: var(--bg-primary); }
+  50%  { background-color: #10141a; }
+  100% { background-color: var(--bg-primary); }
+}
+
+/* Flow-dimmed UI elements */
+.flow-dimmed {
+  transition: opacity 3s ease, filter 3s ease;
+}
+
+/* Typewriter: no caret blink during active typing */
+.typing-active .ProseMirror {
+  caret-color: var(--accent);
+}
+
+/* Keystroke settle animation */
+@keyframes keystroke-settle {
+  0%   { transform: translateY(-0.3px); }
+  100% { transform: translateY(0); }
+}
