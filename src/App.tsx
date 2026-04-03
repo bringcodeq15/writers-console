@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import type { JSONContent, Editor } from '@tiptap/react';
 import { WriterEditor } from './editor/Editor';
-import { Sidebar, type SidebarTab, type SidebarSide, type SidebarWidthIndex } from './sidebar/Sidebar';
+import { Sidebar, type SidebarTab, type SidebarSide } from './sidebar/Sidebar';
 import { ResearchTab } from './sidebar/tabs/ResearchTab';
 import { ScaffoldTab } from './sidebar/tabs/ScaffoldTab';
 import { OutlineTab } from './sidebar/tabs/OutlineTab';
