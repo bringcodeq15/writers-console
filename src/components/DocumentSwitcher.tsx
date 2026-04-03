@@ -1,7 +1,11 @@
-import type { Document } from '../db';
+interface DocEntry {
+  id: string;
+  title: string;
+  updatedAt: string | Date;
+}
 
 interface DocumentSwitcherProps {
-  documents: Document[];
+  documents: DocEntry[];
   currentDocId: string;
   onSwitch: (id: string) => void;
   onCreate: () => void;
@@ -100,7 +104,7 @@ export function DocumentSwitcher({
                     color: 'var(--text-tertiary)',
                   }}
                 >
-                  {doc.updatedAt.toLocaleDateString()} {doc.updatedAt.toLocaleTimeString()}
+                  {new Date(doc.updatedAt).toLocaleDateString()} {new Date(doc.updatedAt).toLocaleTimeString()}
                 </div>
               </div>
               {documents.length > 1 && (

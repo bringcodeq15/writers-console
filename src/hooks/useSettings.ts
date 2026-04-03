@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { db } from '../db';
 
 const DEFAULT_SETTINGS: Record<string, string> = {
-  // API keys are configured by the user in Settings (Cmd+,)
+  searchApiKey: 'BSAmVIG1Z6UJmyRidiUzxJVWp6lwFUV',
+  searchProvider: 'brave',
 };
 
 export function useSettings() {

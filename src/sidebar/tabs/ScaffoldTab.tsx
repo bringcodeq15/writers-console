@@ -45,7 +45,7 @@ function SortableScaffoldLine({
   onRetry: (pid: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: entry.paragraphId,
+    id: entry.id,
   });
 
   const style = {
@@ -98,7 +98,12 @@ export function ScaffoldTab({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    onReorderParagraph(active.id as string, over.id as string);
+    // Map from entry.id back to paragraphId for the reorder
+    const fromEntry = entries.find((e) => e.id === active.id);
+    const toEntry = entries.find((e) => e.id === over.id);
+    if (fromEntry && toEntry) {
+      onReorderParagraph(fromEntry.paragraphId, toEntry.paragraphId);
+    }
   };
 
   const getSuggestionCount = (pid: string) =>
@@ -159,12 +164,12 @@ export function ScaffoldTab({
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext
-          items={entries.map((e) => e.paragraphId)}
+          items={entries.map((e) => e.id)}
           strategy={verticalListSortingStrategy}
         >
           {entries.map((entry) => (
             <SortableScaffoldLine
-              key={entry.paragraphId}
+              key={entry.id}
               entry={entry}
               isHeading={isHeading(entry)}
               suggestionCount={getSuggestionCount(entry.paragraphId)}

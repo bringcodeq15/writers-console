@@ -10,9 +10,43 @@ interface TitleBarProps {
   flowIntensity?: number;
   sidebarSide?: 'left' | 'right';
   onToggleSidebarSide?: () => void;
+  onNewDocument?: () => void;
+  onOpenSwitcher?: () => void;
+  onOpenSettings?: () => void;
+  onOpenExport?: () => void;
+  onImportFile?: () => void;
+  theme?: string;
+  onCycleTheme?: () => void;
 }
 
-export function TitleBar({ title, onTitleChange, onToggleSidebar, sidebarOpen, onOpenFileLibrary, diskEnabled, flowIntensity = 0, sidebarSide = 'left', onToggleSidebarSide }: TitleBarProps) {
+const btnStyle = {
+  fontFamily: 'var(--font-family)',
+  fontSize: 11,
+  color: 'var(--text-tertiary)',
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  padding: '2px 8px',
+};
+
+export function TitleBar({
+  title,
+  onTitleChange,
+  onToggleSidebar,
+  sidebarOpen,
+  onOpenFileLibrary,
+  diskEnabled,
+  flowIntensity = 0,
+  sidebarSide = 'left',
+  onToggleSidebarSide,
+  onNewDocument,
+  onOpenSwitcher,
+  onOpenSettings,
+  onOpenExport,
+  onImportFile,
+  theme = 'dark',
+  onCycleTheme,
+}: TitleBarProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,13 +95,28 @@ export function TitleBar({ title, onTitleChange, onToggleSidebar, sidebarOpen, o
           color: sidebarOpen ? 'var(--accent)' : 'var(--text-tertiary)',
           fontSize: 16,
         }}
-        title="Toggle sidebar (Cmd+\\)"
+        title="Toggle sidebar"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="1" y="2" width="14" height="12" rx="1" />
           <line x1="5.5" y1="2" x2="5.5" y2="14" />
         </svg>
       </button>
+
+      {/* Document switcher button */}
+      {onOpenSwitcher && (
+        <button
+          onClick={onOpenSwitcher}
+          style={{ ...btnStyle, marginRight: 4 }}
+          title="Switch document"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3">
+            <path d="M4 8L1 6l3-2" />
+            <path d="M8 8l3-2-3-2" />
+          </svg>
+        </button>
+      )}
+
       {editing ? (
         <input
           ref={inputRef}
@@ -113,20 +162,65 @@ export function TitleBar({ title, onTitleChange, onToggleSidebar, sidebarOpen, o
           {title}
         </button>
       )}
+
       <div className="flex-1" />
+
+      {/* Visible action buttons */}
+      {onNewDocument && (
+        <button onClick={onNewDocument} style={btnStyle} title="New document">
+          + New
+        </button>
+      )}
+      {onImportFile && (
+        <button onClick={onImportFile} style={btnStyle} title="Import .docx or .md file">
+          Import
+        </button>
+      )}
+      {onOpenExport && (
+        <button onClick={onOpenExport} style={btnStyle} title="Export document">
+          Export
+        </button>
+      )}
+      {onCycleTheme && (
+        <button
+          onClick={onCycleTheme}
+          style={btnStyle}
+          title={`Theme: ${theme} (click to switch)`}
+        >
+          {theme === 'dark' ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+              <circle cx="7" cy="7" r="4" />
+              <line x1="7" y1="0.5" x2="7" y2="2" /><line x1="7" y1="12" x2="7" y2="13.5" />
+              <line x1="0.5" y1="7" x2="2" y2="7" /><line x1="12" y1="7" x2="13.5" y2="7" />
+            </svg>
+          ) : theme === 'sepia' ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+              <path d="M10 3a5 5 0 1 0 0 8" />
+              <path d="M7 1a6 6 0 0 1 0 12" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+              <path d="M11.5 7.5a5.5 5.5 0 1 1-5-5 4 4 0 0 0 5 5z" />
+            </svg>
+          )}
+        </button>
+      )}
+      {onOpenSettings && (
+        <button
+          onClick={onOpenSettings}
+          style={btnStyle}
+          title="Settings"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+            <circle cx="7" cy="7" r="2.5" />
+            <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1.1 1.1M10.1 10.1l1.1 1.1M2.8 11.2l1.1-1.1M10.1 3.9l1.1-1.1" />
+          </svg>
+        </button>
+      )}
       {onToggleSidebarSide && (
         <button
           onClick={onToggleSidebarSide}
-          className="flex items-center gap-1"
-          style={{
-            fontFamily: 'var(--font-family)',
-            fontSize: 11,
-            color: 'var(--text-tertiary)',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px 8px',
-          }}
+          style={btnStyle}
           title={`Move sidebar to ${sidebarSide === 'left' ? 'right' : 'left'}`}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -147,16 +241,7 @@ export function TitleBar({ title, onTitleChange, onToggleSidebar, sidebarOpen, o
       {onOpenFileLibrary && (
         <button
           onClick={onOpenFileLibrary}
-          className="flex items-center gap-1"
-          style={{
-            fontFamily: 'var(--font-family)',
-            fontSize: 11,
-            color: diskEnabled ? 'var(--accent)' : 'var(--text-tertiary)',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '2px 8px',
-          }}
+          style={{ ...btnStyle, color: diskEnabled ? 'var(--accent)' : 'var(--text-tertiary)' }}
           title="File Library"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">

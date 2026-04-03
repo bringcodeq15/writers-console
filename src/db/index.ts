@@ -49,6 +49,18 @@ export interface ResearchSuggestion {
   updatedAt: Date;
 }
 
+export interface PdfAnnotation {
+  id: string;
+  researchItemId: string;
+  pageNumber: number;
+  type: 'highlight' | 'note';
+  rects?: { x: number; y: number; width: number; height: number }[];
+  selectedText?: string;
+  noteContent?: string;
+  color?: string;
+  createdAt: Date;
+}
+
 export interface Settings {
   key: string;
   value: string;

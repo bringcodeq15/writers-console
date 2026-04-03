@@ -18,6 +18,7 @@ const categories = [
       { keys: `${mod}+Shift+S`, desc: 'Scaffold' },
       { keys: `${mod}+Shift+O`, desc: 'Outline' },
       { keys: `${mod}+Shift+F`, desc: 'Search' },
+      { keys: `${mod}+Shift+N`, desc: 'Notes' },
     ],
   },
   {
@@ -37,6 +38,8 @@ const categories = [
     shortcuts: [
       { keys: `${mod}+S`, desc: 'Save' },
       { keys: `${mod}+Shift+E`, desc: 'Export' },
+      { keys: `${mod}+F`, desc: 'Find & Replace' },
+      { keys: `${mod}+Shift+Enter`, desc: 'Fullscreen mode' },
       { keys: `${mod}+/`, desc: 'This help' },
     ],
   },

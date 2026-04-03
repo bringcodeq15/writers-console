@@ -77,6 +77,13 @@ export function usePairing(
     debounceRef.current = setTimeout(updatePairings, 4000);
   }, [updatePairings]);
 
+  // FIX #6: Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   const getSuggestionsForParagraph = useCallback(
     (paragraphId: string) => {
       return suggestions.filter((s) => s.paragraphId === paragraphId);

@@ -28,3 +28,5 @@ release/
 build/icon.iconset/
 *.dmg
 *.blockmap
+*.wc.json
+general-notes.md

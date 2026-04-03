@@ -3,6 +3,7 @@ interface SettingsModalProps {
   searchApiKey: string;
   searchProvider: string;
   fontFamily: string;
+  theme: string;
   diskEnabled: boolean;
   onSave: (key: string, value: string) => void;
   onPickDirectory: () => void;
@@ -38,6 +39,7 @@ export function SettingsModal({
   searchApiKey,
   searchProvider,
   fontFamily,
+  theme,
   diskEnabled,
   onSave,
   onPickDirectory,
@@ -72,6 +74,51 @@ export function SettingsModal({
         >
           Settings
         </h2>
+
+        {/* Theme */}
+        <div className="mb-6">
+          <label style={labelStyle}>Theme</label>
+          <div className="flex gap-2">
+            {[
+              { value: 'dark', label: 'Dark', color: '#111518' },
+              { value: 'light', label: 'Light', color: '#faf8f5' },
+              { value: 'sepia', label: 'Sepia', color: '#f4ecd8' },
+            ].map((t) => (
+              <button
+                key={t.value}
+                onClick={() => onSave('theme', t.value)}
+                style={{
+                  flex: 1,
+                  fontFamily: 'var(--font-family)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: theme === t.value ? 'var(--accent)' : 'var(--text-primary)',
+                  background: theme === t.value ? 'var(--accent-faint)' : 'var(--bg-primary)',
+                  border:
+                    theme === t.value
+                      ? '1px solid var(--accent-dim)'
+                      : '1px solid var(--border-emphasis)',
+                  borderRadius: 2,
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    background: t.color,
+                    border: '1px solid var(--border-emphasis)',
+                    margin: '0 auto 4px',
+                  }}
+                />
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Font Selection */}
         <div className="mb-6">

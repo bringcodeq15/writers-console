@@ -14,6 +14,8 @@ export type ShortcutHandlers = {
   moveParagraphUp: () => void;
   moveParagraphDown: () => void;
   showShortcutHelp: () => void;
+  openFindReplace: () => void;
+  toggleFullscreen: () => void;
 };
 
 export const KeyboardShortcuts = Extension.create<{ handlers: ShortcutHandlers }>({
@@ -35,6 +37,8 @@ export const KeyboardShortcuts = Extension.create<{ handlers: ShortcutHandlers }
         moveParagraphUp: () => {},
         moveParagraphDown: () => {},
         showShortcutHelp: () => {},
+        openFindReplace: () => {},
+        toggleFullscreen: () => {},
       },
     };
   },
@@ -60,6 +64,10 @@ export const KeyboardShortcuts = Extension.create<{ handlers: ShortcutHandlers }
       },
       'Mod-Shift-f': () => {
         h.switchTab('search');
+        return true;
+      },
+      'Mod-Shift-n': () => {
+        h.switchTab('notes');
         return true;
       },
       'Mod-n': () => {
@@ -104,6 +112,14 @@ export const KeyboardShortcuts = Extension.create<{ handlers: ShortcutHandlers }
       },
       'Mod-/': () => {
         h.showShortcutHelp();
+        return true;
+      },
+      'Mod-f': () => {
+        h.openFindReplace();
+        return true;
+      },
+      'Mod-Shift-Enter': () => {
+        h.toggleFullscreen();
         return true;
       },
     };

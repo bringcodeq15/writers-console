@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -29,6 +30,7 @@ interface ResearchTabProps {
   onDelete: (id: string) => void;
   onReorder: (items: ResearchItem[]) => void;
   highlightedItemId?: string | null;
+  onOpenPdf?: (item: ResearchItem) => void;
 }
 
 function SortableResearchItem({
@@ -36,11 +38,13 @@ function SortableResearchItem({
   onUpdate,
   onDelete,
   highlighted,
+  onOpenPdf,
 }: {
   item: ResearchItem;
   onUpdate: (id: string, changes: Partial<ResearchItem>) => void;
   onDelete: (id: string) => void;
   highlighted: boolean;
+  onOpenPdf?: (item: ResearchItem) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.id,
@@ -59,6 +63,7 @@ function SortableResearchItem({
         onDelete={onDelete}
         dragHandleProps={{ ...attributes, ...listeners }}
         highlighted={highlighted}
+        onOpenPdf={onOpenPdf}
       />
     </div>
   );
@@ -71,6 +76,7 @@ export function ResearchTab({
   onDelete,
   onReorder,
   highlightedItemId,
+  onOpenPdf,
 }: ResearchTabProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -82,6 +88,21 @@ export function ResearchTab({
     const newIndex = items.findIndex((i) => i.id === over.id);
     const reordered = arrayMove(items, oldIndex, newIndex);
     onReorder(reordered);
+  };
+
+  const [quickNote, setQuickNote] = useState('');
+
+  const handleQuickAdd = () => {
+    const text = quickNote.trim();
+    if (!text) return;
+
+    // Auto-detect type from content
+    if (/^https?:\/\//i.test(text)) {
+      onAdd({ type: 'link', title: text, content: text, sourceUrl: text });
+    } else {
+      onAdd({ type: 'text', title: text.slice(0, 60) + (text.length > 60 ? '...' : ''), content: text });
+    }
+    setQuickNote('');
   };
 
   return (
@@ -100,6 +121,26 @@ export function ResearchTab({
         Research
       </div>
 
+      {/* Quick-add: always visible, just type and hit Enter */}
+      <input
+        value={quickNote}
+        onChange={(e) => setQuickNote(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') handleQuickAdd(); }}
+        placeholder="Quick note or paste a URL..."
+        style={{
+          width: '100%',
+          fontFamily: 'var(--font-family)',
+          fontSize: 13,
+          color: 'var(--text-primary)',
+          background: 'var(--bg-tertiary)',
+          border: '1px solid var(--border-default)',
+          borderRadius: 2,
+          padding: '6px 10px',
+          outline: 'none',
+          marginBottom: 8,
+        }}
+      />
+
       <ResearchAddForm onAdd={onAdd} />
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -111,6 +152,7 @@ export function ResearchTab({
               onUpdate={onUpdate}
               onDelete={onDelete}
               highlighted={item.id === highlightedItemId}
+              onOpenPdf={onOpenPdf}
             />
           ))}
         </SortableContext>

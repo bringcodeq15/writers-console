@@ -113,13 +113,29 @@ export function useScaffold(
     debounceRef.current = setTimeout(updateScaffold, 2000);
   }, [updateScaffold]);
 
+  // FIX #6: Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   const getOrderedEntries = useCallback(
     (paragraphs: ParagraphInfo[]): (ScaffoldEntry & { paragraphIndex: number })[] => {
-      const entryMap = new Map(entries.map((e) => [e.paragraphId, e]));
+      // Deduplicate entries by paragraphId (keep latest by updatedAt)
+      const entryMap = new Map<string, ScaffoldEntry>();
+      for (const e of entries) {
+        const existing = entryMap.get(e.paragraphId);
+        if (!existing || new Date(e.updatedAt) > new Date(existing.updatedAt)) {
+          entryMap.set(e.paragraphId, e);
+        }
+      }
+      const usedEntryIds = new Set<string>();
       return paragraphs
         .map((p, i) => {
           const entry = entryMap.get(p.pid);
-          if (entry) {
+          if (entry && !usedEntryIds.has(entry.id)) {
+            usedEntryIds.add(entry.id);
             return { ...entry, paragraphIndex: i + 1 };
           }
           return null;

@@ -293,3 +293,31 @@ export async function exportToDocx(content: JSONContent, title: string): Promise
   const blob = await Packer.toBlob(doc);
   saveAs(blob, `${title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'untitled'}.docx`);
 }
+
+/** Generate docx as base64 string (for headless auto-export to disk) */
+export async function exportToDocxBase64(content: JSONContent, title: string): Promise<string> {
+  const paragraphs = docxParagraphsFromNode(content);
+
+  const doc = new DocxDocument({
+    creator: "Writer's Console",
+    title,
+    styles: {
+      default: {
+        document: { run: { font: 'Charter', size: 24, color: '333333' }, paragraph: { spacing: { line: 360 } } },
+        heading1: { run: { font: 'Charter', size: 48, bold: true, color: '1A1A1A' }, paragraph: { spacing: { before: 360, after: 200 } } },
+        heading2: { run: { font: 'Charter', size: 36, bold: true, color: '1A1A1A' }, paragraph: { spacing: { before: 280, after: 160 } } },
+        heading3: { run: { font: 'Charter', size: 28, bold: true, color: '1A1A1A' }, paragraph: { spacing: { before: 240, after: 120 } } },
+      },
+    },
+    sections: [{ properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } }, children: paragraphs }],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const arrayBuffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}

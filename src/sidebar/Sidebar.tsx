@@ -1,7 +1,11 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useRef, useCallback, useState } from 'react';
 
-export type SidebarTab = 'research' | 'scaffold' | 'outline' | 'search';
+export type SidebarTab = 'research' | 'scaffold' | 'outline' | 'search' | 'notes';
 export type SidebarSide = 'left' | 'right';
+
+// Snap ratios: 1/5, 1/4, 1/3, 4/9, 1/2
+export const SIDEBAR_SNAP_RATIOS = [1 / 5, 1 / 4, 1 / 3, 4 / 9, 1 / 2] as const;
+export type SidebarWidthIndex = 0 | 1 | 2 | 3 | 4;
 
 interface SidebarProps {
   open: boolean;
@@ -10,6 +14,8 @@ interface SidebarProps {
   children: ReactNode;
   side?: SidebarSide;
   flowIntensity?: number;
+  widthIndex?: SidebarWidthIndex;
+  onWidthIndexChange?: (index: SidebarWidthIndex) => void;
 }
 
 const tabs: { id: SidebarTab; icon: ReactNode; label: string }[] = [
@@ -62,10 +68,42 @@ const tabs: { id: SidebarTab; icon: ReactNode; label: string }[] = [
       </svg>
     ),
   },
+  {
+    id: 'notes',
+    label: 'Notes',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3">
+        <rect x="3" y="2" width="12" height="14" rx="0.5" />
+        <line x1="6" y1="6" x2="12" y2="6" />
+        <line x1="6" y1="9" x2="12" y2="9" />
+        <line x1="6" y1="12" x2="9" y2="12" />
+      </svg>
+    ),
+  },
 ];
 
-export function Sidebar({ open, activeTab, onTabChange, children, side = 'left', flowIntensity = 0 }: SidebarProps) {
+function ratioLabel(index: number): string {
+  const labels = ['1/5', '1/4', '1/3', '4/9', '1/2'];
+  return labels[index] || '';
+}
+
+export function Sidebar({
+  open,
+  activeTab,
+  onTabChange,
+  children,
+  side = 'left',
+  flowIntensity = 0,
+  widthIndex = 1,
+  onWidthIndexChange,
+}: SidebarProps) {
   const isRight = side === 'right';
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const ratio = SIDEBAR_SNAP_RATIOS[widthIndex];
+  const TAB_BAR_WIDTH = 44;
+
   const borderStyle = isRight
     ? { borderLeft: open ? '1px solid var(--border-default)' : 'none' }
     : { borderRight: open ? '1px solid var(--border-default)' : 'none' };
@@ -74,18 +112,68 @@ export function Sidebar({ open, activeTab, onTabChange, children, side = 'left',
     ? { borderLeft: '1px solid var(--border-default)' }
     : { borderRight: '1px solid var(--border-default)' };
 
+  // Drag-to-resize handler
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setIsDragging(true);
+      const startX = e.clientX;
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const parentWidth = containerRef.current?.parentElement?.clientWidth || window.innerWidth;
+        const deltaX = isRight ? startX - moveEvent.clientX : moveEvent.clientX - startX;
+        const currentWidth = parentWidth * ratio + deltaX;
+        const currentRatio = currentWidth / parentWidth;
+
+        // Find nearest snap point
+        let nearest = 0;
+        let minDist = Infinity;
+        for (let i = 0; i < SIDEBAR_SNAP_RATIOS.length; i++) {
+          const dist = Math.abs(currentRatio - SIDEBAR_SNAP_RATIOS[i]);
+          if (dist < minDist) {
+            minDist = dist;
+            nearest = i;
+          }
+        }
+        if (nearest !== widthIndex) {
+          onWidthIndexChange?.(nearest as SidebarWidthIndex);
+        }
+      };
+
+      const handleMouseUp = () => {
+        setIsDragging(false);
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    },
+    [isRight, ratio, widthIndex, onWidthIndexChange]
+  );
+
+  // Double-click cycles to next snap
+  const handleDoubleClick = useCallback(() => {
+    const next = ((widthIndex + 1) % SIDEBAR_SNAP_RATIOS.length) as SidebarWidthIndex;
+    onWidthIndexChange?.(next);
+  }, [widthIndex, onWidthIndexChange]);
+
   return (
     <div
+      ref={containerRef}
       data-flow-target="sidebar"
       className={`flex h-full overflow-hidden flow-dimmed ${isRight ? 'flex-row-reverse' : ''}`}
       style={{
-        width: open ? 380 : 0,
-        transition: 'width 200ms ease-out',
+        width: open ? `calc(${(ratio * 100).toFixed(2)}% )` : '0px',
+        minWidth: open ? 200 : 0,
+        maxWidth: open ? '60%' : 0,
+        transition: isDragging ? 'none' : 'width 200ms ease-out',
         ...borderStyle,
         flexShrink: 0,
         order: isRight ? 1 : 0,
         opacity: 1 - flowIntensity * 0.7,
         filter: `blur(${flowIntensity * 1.5}px)`,
+        position: 'relative',
       }}
     >
       {open && (
@@ -94,8 +182,8 @@ export function Sidebar({ open, activeTab, onTabChange, children, side = 'left',
           <div
             className="flex flex-col items-center py-2"
             style={{
-              width: 44,
-              minWidth: 44,
+              width: TAB_BAR_WIDTH,
+              minWidth: TAB_BAR_WIDTH,
               background: 'var(--bg-primary)',
               ...tabBarBorder,
             }}
@@ -121,18 +209,53 @@ export function Sidebar({ open, activeTab, onTabChange, children, side = 'left',
                 {tab.icon}
               </button>
             ))}
+
+            {/* Width ratio indicator at bottom of tab bar */}
+            <div className="flex-1" />
+            <button
+              onClick={handleDoubleClick}
+              title={`Sidebar width: ${ratioLabel(widthIndex)} (click to cycle)`}
+              style={{
+                fontFamily: 'var(--font-family)',
+                fontSize: 9,
+                color: 'var(--text-tertiary)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px 0',
+                opacity: 0.6,
+              }}
+            >
+              {ratioLabel(widthIndex)}
+            </button>
           </div>
+
           {/* Content panel */}
           <div
             className="flex-1 overflow-y-auto"
             style={{
               background: 'var(--bg-secondary)',
-              width: 336,
               minWidth: 0,
             }}
           >
             {children}
           </div>
+
+          {/* Resize handle on the edge */}
+          <div
+            onMouseDown={handleMouseDown}
+            onDoubleClick={handleDoubleClick}
+            style={{
+              position: 'absolute',
+              top: 0,
+              [isRight ? 'left' : 'right']: -3,
+              width: 6,
+              height: '100%',
+              cursor: 'col-resize',
+              zIndex: 20,
+              background: isDragging ? 'var(--accent-faint)' : 'transparent',
+            }}
+          />
         </>
       )}
     </div>

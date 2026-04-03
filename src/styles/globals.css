@@ -72,6 +72,7 @@
   --font-commitmono: 'CommitMonoWConsole', 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
   --font-family: var(--font-charter);
 
+  /* Dark theme (default) */
   --bg-primary: #111518;
   --bg-secondary: #161b22;
   --bg-tertiary: #1c2128;
@@ -79,20 +80,82 @@
   --bg-active: #282e36;
 
   --text-primary: #d4d2cc;
-  --text-secondary: #949088;       /* warmed from #8b949e — matches warm text palette */
-  --text-tertiary: #7d8590;        /* raised from #6e7681 — now passes WCAG AA (4.6:1) */
+  --text-secondary: #949088;
+  --text-tertiary: #7d8590;
   --text-heading: #e6e1d8;
 
   --accent: #d4a051;
-  --accent-dim: #b8883f;            /* raised from #a67a3c — now passes AA on tertiary bg */
-  --accent-faint: rgba(212, 160, 81, 0.15); /* raised from 0.12 — more perceptible highlights */
+  --accent-dim: #b8883f;
+  --accent-faint: rgba(212, 160, 81, 0.15);
 
   --border-default: rgba(255, 255, 255, 0.06);
   --border-emphasis: rgba(255, 255, 255, 0.12);
 
-  --color-error: #e05459;            /* raised from #d4555a — now passes AA on all backgrounds */
+  --color-error: #e05459;
   --color-success: #57ab5a;
   --color-loading: #8b949e;
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.08);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.14);
+  --selection-bg: rgba(212, 160, 81, 0.3);
+}
+
+/* Light theme */
+:root[data-theme="light"] {
+  --bg-primary: #faf8f5;          /* warm cream paper */
+  --bg-secondary: #f0ede8;        /* sidebar — slightly cooler */
+  --bg-tertiary: #e8e4de;         /* cards, inputs */
+  --bg-hover: #ddd8d0;            /* hover */
+  --bg-active: #d4cfc6;           /* active/pressed */
+
+  --text-primary: #2c2a26;        /* near-black with warm cast */
+  --text-secondary: #6b665e;      /* warm mid-gray */
+  --text-tertiary: #9a9489;       /* lighter warm gray */
+  --text-heading: #1a1815;        /* deep warm black */
+
+  --accent: #b07d2e;              /* darker amber for light bg (WCAG AA) */
+  --accent-dim: #8e6424;
+  --accent-faint: rgba(176, 125, 46, 0.1);
+
+  --border-default: rgba(0, 0, 0, 0.06);
+  --border-emphasis: rgba(0, 0, 0, 0.12);
+
+  --color-error: #c4383d;
+  --color-success: #2d7d32;
+  --color-loading: #6b665e;
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.1);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.18);
+  --selection-bg: rgba(176, 125, 46, 0.2);
+}
+
+/* Sepia theme */
+:root[data-theme="sepia"] {
+  --bg-primary: #f4ecd8;          /* parchment */
+  --bg-secondary: #ebe3cf;
+  --bg-tertiary: #e0d8c4;
+  --bg-hover: #d5ccb8;
+  --bg-active: #cbc2ae;
+
+  --text-primary: #3d3529;
+  --text-secondary: #6e6354;
+  --text-tertiary: #9a8e7c;
+  --text-heading: #2a2318;
+
+  --accent: #a06f28;
+  --accent-dim: #825a20;
+  --accent-faint: rgba(160, 111, 40, 0.12);
+
+  --border-default: rgba(0, 0, 0, 0.06);
+  --border-emphasis: rgba(0, 0, 0, 0.1);
+
+  --color-error: #b53038;
+  --color-success: #2d7030;
+  --color-loading: #6e6354;
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.08);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.15);
+  --selection-bg: rgba(160, 111, 40, 0.2);
 }
 
 * {
@@ -116,7 +179,7 @@ body {
 }
 
 ::selection {
-  background: rgba(212, 160, 81, 0.3);
+  background: var(--selection-bg);
   color: var(--text-heading);
 }
 
@@ -130,12 +193,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--scrollbar-thumb-hover);
 }
 
 input, textarea, select, button {

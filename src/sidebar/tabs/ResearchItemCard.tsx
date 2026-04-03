@@ -7,6 +7,7 @@ interface ResearchItemCardProps {
   onDelete: (id: string) => void;
   dragHandleProps?: Record<string, unknown>;
   highlighted?: boolean;
+  onOpenPdf?: (item: ResearchItem) => void;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -23,20 +24,35 @@ export function ResearchItemCard({
   onDelete,
   dragHandleProps,
   highlighted,
+  onOpenPdf,
 }: ResearchItemCardProps) {
+  const isPdf = item.type === 'file' && (item.content.endsWith('.pdf') || item.title.endsWith('.pdf'));
   const [menuOpen, setMenuOpen] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(item.title);
 
   const preview = item.content.slice(0, 200);
 
+  const handleDragStart = (e: React.DragEvent) => {
+    // Native HTML5 drag for cross-panel drop onto editor
+    e.dataTransfer.setData('text/plain', item.content);
+    e.dataTransfer.setData(
+      'application/wc-research',
+      JSON.stringify({ id: item.id, title: item.title, content: item.content, type: item.type })
+    );
+    e.dataTransfer.effectAllowed = 'copyMove';
+  };
+
   return (
     <div
-      className="p-3 mb-2"
+      className="p-3 mb-2 research-card-draggable"
+      draggable
+      onDragStart={handleDragStart}
       style={{
         background: highlighted ? 'var(--accent-faint)' : 'var(--bg-tertiary)',
         border: highlighted ? '1px solid var(--accent-dim)' : '1px solid var(--border-default)',
         borderRadius: 0,
+        cursor: 'grab',
       }}
     >
       <div className="flex items-center gap-2 mb-1">
@@ -111,7 +127,23 @@ export function ResearchItemCard({
         )}
       </div>
 
-      {preview && (
+      {isPdf && onOpenPdf ? (
+        <button
+          onClick={() => onOpenPdf(item)}
+          className="mb-2 w-full text-left p-2"
+          style={{
+            fontFamily: 'var(--font-family)',
+            fontSize: 12,
+            color: 'var(--accent)',
+            background: 'var(--accent-faint)',
+            border: '1px solid var(--accent-dim)',
+            borderRadius: 2,
+            cursor: 'pointer',
+          }}
+        >
+          Open PDF Reader
+        </button>
+      ) : preview ? (
         <div
           className="mb-2"
           style={{
@@ -127,7 +159,7 @@ export function ResearchItemCard({
         >
           {preview}
         </div>
-      )}
+      ) : null}
 
       <div className="flex items-center justify-between">
         <div className="flex gap-1 flex-wrap">

@@ -73,7 +73,7 @@ function scoreResearchUtilization(
   researchItems: ResearchItem[],
   suggestions: ResearchSuggestion[]
 ): number {
-  if (researchItems.length === 0) return 100;
+  if (researchItems.length === 0) return 0; // No research = 0%, not 100%
   const pairedIds = new Set(suggestions.map((s) => s.researchItemId));
   return Math.round((pairedIds.size / researchItems.length) * 100);
 }
@@ -82,7 +82,7 @@ function scoreOutlineCoverage(
   outlineItems: OutlineItem[],
   nodes: { type: string; text: string }[]
 ): number {
-  if (outlineItems.length === 0) return 100;
+  if (outlineItems.length === 0) return 0; // No outline = 0%, not 100%
 
   const allText = nodes.map((n) => n.text.toLowerCase()).join(' ');
   let covered = 0;
@@ -112,7 +112,8 @@ export function useCompleteness(
   content: JSONContent | undefined,
   outlineItems: OutlineItem[],
   researchItems: ResearchItem[],
-  suggestions: ResearchSuggestion[]
+  suggestions: ResearchSuggestion[],
+  targetWordCount: number = 3000
 ): CompletenessBreakdown {
   return useMemo(() => {
     if (!content) {
@@ -126,7 +127,7 @@ export function useCompleteness(
     const paragraphDepth = scoreParagraphDepth(nodes);
     const researchUtilization = scoreResearchUtilization(researchItems, suggestions);
     const outlineCoverage = scoreOutlineCoverage(outlineItems, nodes);
-    const wordCountProgress = scoreWordCount(totalWords);
+    const wordCountProgress = scoreWordCount(totalWords, targetWordCount);
 
     const overall = Math.round(
       structure * 0.2 +

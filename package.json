@@ -5,7 +5,7 @@
   "private": true,
   "description": "A local-first writing environment for long-form prose",
   "author": "Daniel Bring",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -67,7 +67,10 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@tiptap/extension-bullet-list": "^3.22.1",
     "@tiptap/extension-link": "^3.22.1",
+    "@tiptap/extension-list-item": "^3.22.1",
+    "@tiptap/extension-ordered-list": "^3.22.1",
     "@tiptap/extension-placeholder": "^3.22.1",
     "@tiptap/pm": "^3.22.1",
     "@tiptap/react": "^3.22.1",
@@ -78,9 +81,11 @@
     "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3",
     "file-saver": "^2.0.5",
+    "mammoth": "^1.12.0",
     "nanoid": "^5.1.7",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-pdf": "^10.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

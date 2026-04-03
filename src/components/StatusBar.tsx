@@ -1,30 +1,60 @@
+import { useState, useRef, useEffect } from 'react';
 import type { SaveState } from '../hooks/useAutoSave';
 
 interface StatusBarProps {
   wordCount: number;
+  charCount: number;
   paragraphCount: number;
   saveState: SaveState;
   apiCallCount: number;
   diskEnabled?: boolean;
-  diskLastSaved?: Date | null;
   completenessScore?: number;
   onCompletenessClick?: () => void;
   milestoneFlash?: boolean;
   flowIntensity?: number;
+  wordCountTarget?: number;
+  onWordCountTargetChange?: (target: number) => void;
 }
 
 export function StatusBar({
   wordCount,
+  charCount,
   paragraphCount,
   saveState,
   apiCallCount,
   diskEnabled,
-  diskLastSaved,
   completenessScore,
   onCompletenessClick,
   milestoneFlash,
   flowIntensity = 0,
+  wordCountTarget = 3000,
+  onWordCountTargetChange,
 }: StatusBarProps) {
+  const [editingTarget, setEditingTarget] = useState(false);
+  const [targetValue, setTargetValue] = useState(String(wordCountTarget));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setTargetValue(String(wordCountTarget));
+  }, [wordCountTarget]);
+
+  useEffect(() => {
+    if (editingTarget && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingTarget]);
+
+  const handleTargetSubmit = () => {
+    setEditingTarget(false);
+    const num = parseInt(targetValue);
+    if (num && num > 0 && num !== wordCountTarget) {
+      onWordCountTargetChange?.(num);
+    } else {
+      setTargetValue(String(wordCountTarget));
+    }
+  };
+
   const saveColor =
     saveState === 'saved'
       ? 'var(--color-success)'
@@ -53,8 +83,64 @@ export function StatusBar({
       }}
     >
       <div className="flex items-center gap-4">
-        <span>{wordCount.toLocaleString()} words</span>
-        <span>{paragraphCount} paragraphs</span>
+        {/* Word count / target */}
+        <span>
+          {wordCount.toLocaleString()}
+          <span style={{ color: 'var(--text-tertiary)' }}> / </span>
+          {editingTarget ? (
+            <input
+              ref={inputRef}
+              value={targetValue}
+              onChange={(e) => setTargetValue(e.target.value.replace(/\D/g, ''))}
+              onBlur={handleTargetSubmit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleTargetSubmit();
+                if (e.key === 'Escape') {
+                  setTargetValue(String(wordCountTarget));
+                  setEditingTarget(false);
+                }
+              }}
+              style={{
+                width: 45,
+                fontFamily: 'var(--font-family)',
+                fontSize: 12,
+                color: 'var(--text-primary)',
+                background: 'var(--bg-tertiary)',
+                border: '1px solid var(--border-emphasis)',
+                borderRadius: 2,
+                padding: '0 3px',
+                outline: 'none',
+                textAlign: 'center',
+              }}
+            />
+          ) : (
+            <button
+              onClick={() => setEditingTarget(true)}
+              style={{
+                fontFamily: 'var(--font-family)',
+                fontSize: 12,
+                color: 'var(--text-tertiary)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+              title="Click to set word count target"
+            >
+              {wordCountTarget.toLocaleString()}
+            </button>
+          )}
+          <span style={{ color: 'var(--text-tertiary)' }}> words</span>
+        </span>
+        <span>{paragraphCount} para</span>
+        <span>{charCount.toLocaleString()} chars</span>
+        <span>{Math.max(1, Math.ceil(wordCount / 250))} min read</span>
+        <span
+          title={`~${Math.max(1, Math.ceil(wordCount / 250))} pg single-spaced, ~${Math.max(1, Math.ceil(wordCount / 125))} pg double-spaced`}
+          style={{ cursor: 'help' }}
+        >
+          ~{Math.max(1, Math.ceil(wordCount / 250))}/{Math.max(1, Math.ceil(wordCount / 125))} pg
+        </span>
         {completenessScore !== undefined && (
           <button
             onClick={onCompletenessClick}
@@ -106,13 +192,10 @@ export function StatusBar({
             AI: {apiCallCount} calls (~${(apiCallCount * 0.002).toFixed(3)})
           </span>
         )}
-        {diskEnabled && diskLastSaved && (
-          <span style={{ color: 'var(--accent-dim)' }}>
-            Disk: {diskLastSaved.toLocaleTimeString()}
+        {diskEnabled && (
+          <span style={{ color: 'var(--text-tertiary)' }}>
+            Disk: ~/Documents
           </span>
-        )}
-        {diskEnabled && !diskLastSaved && (
-          <span style={{ color: 'var(--text-tertiary)' }}>Disk: connected</span>
         )}
         <span style={{ color: saveColor }}>{saveText}</span>
       </div>

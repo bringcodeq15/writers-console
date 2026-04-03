@@ -15,6 +15,7 @@ interface EditorProps {
   onEditorReady: (editor: ReturnType<typeof useEditor>) => void;
   shortcutHandlers: ShortcutHandlers;
   onOpenLink?: () => void;
+  onAttachResearch?: (paragraphId: string, researchItemId: string) => void;
   flowIntensity?: number;
   isTyping?: boolean;
   completenessScore?: number;
@@ -26,6 +27,7 @@ export function WriterEditor({
   onEditorReady,
   shortcutHandlers,
   onOpenLink,
+  onAttachResearch,
   flowIntensity = 0,
   isTyping = false,
   completenessScore = 0,
@@ -33,6 +35,8 @@ export function WriterEditor({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollPercent, setScrollPercent] = useState(0);
   const [viewportPercent, setViewportPercent] = useState(100);
+  const attachResearchRef = useRef(onAttachResearch);
+  attachResearchRef.current = onAttachResearch;
 
   const editor = useEditor({
     extensions: [
@@ -60,6 +64,80 @@ export function WriterEditor({
       attributes: {
         class: 'tiptap',
         spellcheck: 'true',
+      },
+      handleDOMEvents: {
+        dragover: (_view, event) => {
+          // Check if this is a research item drag
+          if (event.dataTransfer?.types.includes('application/wc-research')) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy';
+
+            // Highlight the paragraph under the cursor
+            const target = (event.target as HTMLElement).closest?.('[data-pid]');
+            // Remove previous highlights
+            document.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+            if (target) {
+              target.classList.add('drag-over');
+            }
+          }
+          return false;
+        },
+        dragleave: (_view, event) => {
+          const related = event.relatedTarget as HTMLElement | null;
+          if (!related?.closest?.('.tiptap')) {
+            document.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+          }
+          return false;
+        },
+        drop: (view, event) => {
+          // Clean up highlight
+          document.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+
+          const raw = event.dataTransfer?.getData('application/wc-research');
+          if (!raw) return false;
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          try {
+            const item = JSON.parse(raw);
+            const dropTarget = (event.target as HTMLElement).closest?.('[data-pid]');
+            const pid = dropTarget?.getAttribute('data-pid');
+
+            if (pid && dropTarget) {
+              // Dropped ON a paragraph → attach research item
+              if (attachResearchRef.current) {
+                attachResearchRef.current(pid, item.id);
+              }
+              // Flash the paragraph to confirm
+              dropTarget.classList.add('highlight-flash');
+              setTimeout(() => {
+                dropTarget.classList.remove('highlight-flash');
+                dropTarget.classList.add('highlight-flash-off');
+                setTimeout(() => dropTarget.classList.remove('highlight-flash-off'), 1000);
+              }, 100);
+            }
+
+            // Also insert the content as a blockquote at the drop position
+            const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+            if (pos) {
+              const editorInstance = view.state;
+              const insertPos = editorInstance.doc.resolve(pos.pos).after(1);
+              view.dispatch(
+                view.state.tr.insert(insertPos, view.state.schema.nodes.blockquote.create(
+                  null,
+                  view.state.schema.nodes.paragraph.create(
+                    null,
+                    item.content ? view.state.schema.text(item.content) : null
+                  )
+                ))
+              );
+            }
+          } catch {
+            // Ignore parse failures
+          }
+          return true;
+        },
       },
     },
   });
