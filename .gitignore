@@ -30,3 +30,7 @@ build/icon.iconset/
 *.blockmap
 *.wc.json
 general-notes.md
+
+# Per-document subfolders (user data)
+*-????????/
+exports/
