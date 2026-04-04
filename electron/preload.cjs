@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // File system operations (disk-first storage)
   fs: {
     getDocumentsDir: () => ipcRenderer.invoke('fs:get-documents-dir'),
+    getAppDir: () => ipcRenderer.invoke('fs:get-app-dir'),
     listFiles: (dir) => ipcRenderer.invoke('fs:list-files', dir),
     readFile: (path) => ipcRenderer.invoke('fs:read-file', path),
     writeFile: (path, content) => ipcRenderer.invoke('fs:write-file', path, content),

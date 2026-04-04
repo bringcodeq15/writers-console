@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { isElectron, getDocumentsDir } from '../storage/fileStorage';
+import { isElectron, getAppDir } from '../storage/fileStorage';
 
 export function useGlobalNotes() {
   const [content, setContent] = useState('');
@@ -15,7 +15,7 @@ export function useGlobalNotes() {
       return;
     }
     (async () => {
-      const dir = await getDocumentsDir();
+      const dir = await getAppDir();
       const filePath = `${dir}/general-notes.md`;
       const result = await window.electronAPI!.fs.readFile(filePath);
       if (result.ok && result.content) {
@@ -27,7 +27,7 @@ export function useGlobalNotes() {
 
   const saveToStore = useCallback(async (text: string) => {
     if (isElectron) {
-      const dir = await getDocumentsDir();
+      const dir = await getAppDir();
       const filePath = `${dir}/general-notes.md`;
       await window.electronAPI!.fs.writeFile(filePath, text);
     } else {

@@ -11,13 +11,17 @@ autoUpdater.logger.transports.file.level = 'info';
 let mainWindow;
 
 // --- Documents directory ---
-// Default: ~/Documents/Writer's Console/
+// Documents stored directly in ~/Documents/ as per-doc subfolders
+// App config/exports stay in ~/Documents/Writer's Console/
 function getDocumentsDir() {
+  return app.getPath('documents');
+}
+
+function getAppDir() {
   const dir = path.join(app.getPath('documents'), "Writer's Console");
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  // Ensure exports subfolder exists
   const exportsDir = path.join(dir, 'exports');
   if (!fs.existsSync(exportsDir)) {
     fs.mkdirSync(exportsDir, { recursive: true });
@@ -31,13 +35,17 @@ ipcMain.handle('fs:get-documents-dir', () => {
   return getDocumentsDir();
 });
 
+ipcMain.handle('fs:get-app-dir', () => {
+  return getAppDir();
+});
+
 ipcMain.handle('fs:list-files', async (_event, dirPath) => {
   const dir = dirPath || getDocumentsDir();
   try {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     const files = [];
 
-    // Check top-level .wc.json files (legacy flat structure)
+    // Check top-level .wc.json files (legacy flat structure in ~/Documents/ or ~/Documents/Writer's Console/)
     for (const e of entries) {
       if (e.isFile() && e.name.endsWith('.wc.json')) {
         const filePath = path.join(dir, e.name);
@@ -45,9 +53,10 @@ ipcMain.handle('fs:list-files', async (_event, dirPath) => {
       }
     }
 
-    // Check subdirectories for .wc.json files (new per-doc folder structure)
+    // Check subdirectories for .wc.json files
+    // Only scan dirs that are likely WC doc folders (contain a .wc.json)
     for (const e of entries) {
-      if (e.isDirectory() && e.name !== 'exports') {
+      if (e.isDirectory() && e.name !== 'exports' && e.name !== 'node_modules') {
         const subDir = path.join(dir, e.name);
         try {
           const subEntries = fs.readdirSync(subDir, { withFileTypes: true });
@@ -61,7 +70,41 @@ ipcMain.handle('fs:list-files', async (_event, dirPath) => {
       }
     }
 
-    return files.sort((a, b) => b.modified - a.modified);
+    // Also check legacy location ~/Documents/Writer's Console/
+    const legacyDir = path.join(dir, "Writer's Console");
+    if (dir !== legacyDir && fs.existsSync(legacyDir)) {
+      try {
+        const legacyEntries = fs.readdirSync(legacyDir, { withFileTypes: true });
+        for (const e of legacyEntries) {
+          if (e.isFile() && e.name.endsWith('.wc.json')) {
+            const filePath = path.join(legacyDir, e.name);
+            files.push({ name: e.name, path: filePath, modified: fs.statSync(filePath).mtimeMs });
+          }
+          if (e.isDirectory() && e.name !== 'exports') {
+            const subDir = path.join(legacyDir, e.name);
+            try {
+              const subEntries = fs.readdirSync(subDir, { withFileTypes: true });
+              for (const se of subEntries) {
+                if (se.isFile() && se.name.endsWith('.wc.json')) {
+                  const filePath = path.join(subDir, se.name);
+                  files.push({ name: se.name, path: filePath, modified: fs.statSync(filePath).mtimeMs });
+                }
+              }
+            } catch { /* skip */ }
+          }
+        }
+      } catch { /* skip */ }
+    }
+
+    // Deduplicate by file path
+    const seen = new Set();
+    const unique = files.filter(f => {
+      if (seen.has(f.path)) return false;
+      seen.add(f.path);
+      return true;
+    });
+
+    return unique.sort((a, b) => b.modified - a.modified);
   } catch {
     return [];
   }

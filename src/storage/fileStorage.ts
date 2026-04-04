@@ -27,6 +27,7 @@ export interface FileEntry {
 // Type for the Electron API exposed via preload
 interface ElectronFS {
   getDocumentsDir: () => Promise<string>;
+  getAppDir: () => Promise<string>;
   listFiles: (dir?: string) => Promise<FileEntry[]>;
   readFile: (path: string) => Promise<{ ok: boolean; content?: string; error?: string }>;
   writeFile: (path: string, content: string) => Promise<{ ok: boolean; error?: string }>;
@@ -79,6 +80,11 @@ function createEmptyDoc(id: string, title = 'Untitled'): WCDocument {
 export async function getDocumentsDir(): Promise<string> {
   if (!isElectron) throw new Error('Not in Electron');
   return window.electronAPI!.fs.getDocumentsDir();
+}
+
+export async function getAppDir(): Promise<string> {
+  if (!isElectron) throw new Error('Not in Electron');
+  return window.electronAPI!.fs.getAppDir();
 }
 
 export async function listDocuments(): Promise<FileEntry[]> {
