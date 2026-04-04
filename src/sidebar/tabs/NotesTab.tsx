@@ -9,6 +9,18 @@ interface NotesTabProps {
   onTransferNote: (docTitle: string, noteText: string) => void;
 }
 
+// Each line is stored as "  • text" where leading spaces = indent level
+function parseLine(raw: string): { indent: number; text: string } {
+  const match = raw.match(/^(\s*)[•\-\*]?\s*(.*)/);
+  if (!match) return { indent: 0, text: raw };
+  const spaces = match[1].length;
+  return { indent: Math.floor(spaces / 2), text: match[2] };
+}
+
+function formatLine(indent: number, text: string): string {
+  return '  '.repeat(indent) + '• ' + text;
+}
+
 export function NotesTab({
   content,
   loaded,
@@ -28,17 +40,14 @@ export function NotesTab({
     return documentTitles.filter((t) => t.toLowerCase().includes(q)).slice(0, 8);
   }, [autocompleteQuery, documentTitles]);
 
-  // Parse lines that are ready to transfer (start with /DocTitle)
+  // Parse transferable lines (start with /DocTitle after the bullet)
   const transferableLines = useMemo(() => {
     const lines = content.split('\n');
     const results: { lineIndex: number; docTitle: string; noteText: string }[] = [];
-
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line.startsWith('/') || line.length < 2) continue;
-
-      const afterSlash = line.slice(1);
-      // Find matching document title at start of line
+      const { text } = parseLine(lines[i]);
+      if (!text.startsWith('/') || text.length < 2) continue;
+      const afterSlash = text.slice(1);
       const matchedDoc = documentTitles.find((t) =>
         afterSlash.toLowerCase().startsWith(t.toLowerCase())
       );
@@ -52,10 +61,21 @@ export function NotesTab({
     return results;
   }, [content, documentTitles]);
 
+  // Ensure content always uses bullet format
+  const normalizeContent = useCallback((raw: string): string => {
+    if (!raw.trim()) return '';
+    const lines = raw.split('\n');
+    return lines.map((line) => {
+      if (!line.trim()) return '';
+      const { indent, text } = parseLine(line);
+      if (!text) return '';
+      return formatLine(indent, text);
+    }).filter((l) => l !== '').join('\n');
+  }, []);
+
   const handleTextareaChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newContent = e.target.value;
-      onUpdate(newContent);
+      onUpdate(e.target.value);
     },
     [onUpdate]
   );
@@ -63,15 +83,14 @@ export function NotesTab({
   const checkAutocomplete = useCallback(() => {
     const ta = textareaRef.current;
     if (!ta) return;
-
     const cursorPos = ta.selectionStart;
     const textBefore = ta.value.slice(0, cursorPos);
     const lastNewline = textBefore.lastIndexOf('\n');
     const currentLine = textBefore.slice(lastNewline + 1);
+    const { text } = parseLine(currentLine);
 
-    if (currentLine.startsWith('/') && currentLine.length >= 1) {
-      const query = currentLine.slice(1);
-      setAutocompleteQuery(query);
+    if (text.startsWith('/') && text.length >= 1) {
+      setAutocompleteQuery(text.slice(1));
       setShowAutocomplete(true);
       setAutocompleteIndex(0);
     } else {
@@ -83,21 +102,20 @@ export function NotesTab({
     (title: string) => {
       const ta = textareaRef.current;
       if (!ta) return;
-
       const cursorPos = ta.selectionStart;
       const textBefore = ta.value.slice(0, cursorPos);
       const textAfter = ta.value.slice(cursorPos);
       const lastNewline = textBefore.lastIndexOf('\n');
-      const lineStart = lastNewline + 1;
+      const currentLine = textBefore.slice(lastNewline + 1);
+      const { indent } = parseLine(currentLine);
 
-      const newContent =
-        ta.value.slice(0, lineStart) + '/' + title + ' ' + textAfter;
+      const newLine = formatLine(indent, '/' + title + ' ');
+      const newContent = ta.value.slice(0, lastNewline + 1) + newLine + textAfter;
       onUpdate(newContent);
       setShowAutocomplete(false);
 
-      // Set cursor after the inserted title
       setTimeout(() => {
-        const newPos = lineStart + 1 + title.length + 1;
+        const newPos = lastNewline + 1 + newLine.length;
         ta.selectionStart = newPos;
         ta.selectionEnd = newPos;
         ta.focus();
@@ -108,22 +126,95 @@ export function NotesTab({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (!showAutocomplete) return;
+      const ta = textareaRef.current;
+      if (!ta) return;
 
-      if (e.key === 'ArrowDown') {
+      // Autocomplete navigation
+      if (showAutocomplete) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setAutocompleteIndex((i) => Math.min(i + 1, filteredDocs.length - 1));
+          return;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setAutocompleteIndex((i) => Math.max(i - 1, 0));
+          return;
+        } else if (e.key === 'Enter' && filteredDocs.length > 0) {
+          e.preventDefault();
+          insertDocTitle(filteredDocs[autocompleteIndex]);
+          return;
+        } else if (e.key === 'Escape') {
+          setShowAutocomplete(false);
+          return;
+        }
+      }
+
+      const cursorPos = ta.selectionStart;
+      const lines = ta.value.split('\n');
+      const textBefore = ta.value.slice(0, cursorPos);
+      const lineIndex = textBefore.split('\n').length - 1;
+      const currentLine = lines[lineIndex] || '';
+      const { indent, text } = parseLine(currentLine);
+
+      // Enter: create new bullet at same indent
+      if (e.key === 'Enter') {
         e.preventDefault();
-        setAutocompleteIndex((i) => Math.min(i + 1, filteredDocs.length - 1));
-      } else if (e.key === 'ArrowUp') {
+        if (!text.trim()) {
+          // Empty bullet — remove it and just add newline
+          lines[lineIndex] = '';
+          const newContent = lines.join('\n');
+          onUpdate(newContent);
+          return;
+        }
+        const newLine = formatLine(indent, '');
+        lines.splice(lineIndex + 1, 0, newLine);
+        const newContent = lines.join('\n');
+        onUpdate(newContent);
+        // Move cursor to end of new bullet
+        setTimeout(() => {
+          const newPos = ta.value.split('\n').slice(0, lineIndex + 2).join('\n').length;
+          ta.selectionStart = newPos;
+          ta.selectionEnd = newPos;
+        }, 10);
+        return;
+      }
+
+      // Tab: indent
+      if (e.key === 'Tab' && !e.shiftKey) {
         e.preventDefault();
-        setAutocompleteIndex((i) => Math.max(i - 1, 0));
-      } else if (e.key === 'Enter' && filteredDocs.length > 0) {
+        const newIndent = Math.min(indent + 1, 4);
+        lines[lineIndex] = formatLine(newIndent, text);
+        onUpdate(lines.join('\n'));
+        return;
+      }
+
+      // Shift+Tab: outdent
+      if (e.key === 'Tab' && e.shiftKey) {
         e.preventDefault();
-        insertDocTitle(filteredDocs[autocompleteIndex]);
-      } else if (e.key === 'Escape') {
-        setShowAutocomplete(false);
+        const newIndent = Math.max(indent - 1, 0);
+        lines[lineIndex] = formatLine(newIndent, text);
+        onUpdate(lines.join('\n'));
+        return;
+      }
+
+      // Backspace at start of bullet text: outdent or delete bullet
+      if (e.key === 'Backspace') {
+        const lineStart = textBefore.lastIndexOf('\n') + 1;
+        const posInLine = cursorPos - lineStart;
+        const bulletEnd = currentLine.indexOf('• ') + 2;
+        if (posInLine <= bulletEnd && text === '') {
+          e.preventDefault();
+          if (indent > 0) {
+            lines[lineIndex] = formatLine(indent - 1, text);
+          } else {
+            lines.splice(lineIndex, 1);
+          }
+          onUpdate(lines.join('\n'));
+          return;
+        }
       }
     },
-    [showAutocomplete, filteredDocs, autocompleteIndex, insertDocTitle]
+    [showAutocomplete, filteredDocs, autocompleteIndex, insertDocTitle, onUpdate]
   );
 
   const handleTransfer = useCallback(
@@ -134,7 +225,6 @@ export function NotesTab({
     [onTransferNote, onRemoveLine]
   );
 
-  // Update autocomplete on cursor movement
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
@@ -142,6 +232,16 @@ export function NotesTab({
     ta.addEventListener('click', handleSelect);
     return () => ta.removeEventListener('click', handleSelect);
   }, [checkAutocomplete]);
+
+  // On first load, normalize existing content to bullet format
+  useEffect(() => {
+    if (loaded && content && !content.includes('•')) {
+      const normalized = normalizeContent(content);
+      if (normalized !== content) {
+        onUpdate(normalized);
+      }
+    }
+  }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!loaded) {
     return (
@@ -154,27 +254,42 @@ export function NotesTab({
   return (
     <div className="p-3 flex flex-col h-full">
       <div
-        className="mb-3"
-        style={{
-          fontFamily: 'var(--font-family)',
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
-          color: 'var(--text-secondary)',
-        }}
+        className="mb-3 flex items-center gap-2"
+        title="Each line is a bullet note. Press Enter for new bullet, Tab/Shift+Tab to indent/outdent. Type /DocName to tag a note for transfer to a document's research."
       >
-        Notes
+        <span
+          style={{
+            fontFamily: 'var(--font-family)',
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          Notes
+        </span>
+        <span
+          style={{
+            fontFamily: 'var(--font-family)',
+            fontSize: 10,
+            color: 'var(--text-tertiary)',
+            cursor: 'help',
+          }}
+          title="Each line is a bullet note. Press Enter for new bullet, Tab/Shift+Tab to indent/outdent. Type /DocName to tag a note for transfer to a document's research."
+        >
+          ?
+        </span>
       </div>
 
-      <div className="relative flex-1 min-h-0" style={{ maxHeight: '60%' }}>
+      <div className="relative flex-1 min-h-0">
         <textarea
           ref={textareaRef}
           value={content}
           onChange={handleTextareaChange}
           onKeyUp={checkAutocomplete}
           onKeyDown={handleKeyDown}
-          placeholder="Type notes here... Use /DocumentName to tag a note for transfer."
+          placeholder="• Start typing a note..."
           style={{
             width: '100%',
             height: '100%',
@@ -188,6 +303,7 @@ export function NotesTab({
             padding: '8px 10px',
             outline: 'none',
             resize: 'none',
+            tabSize: 2,
           }}
         />
 
@@ -296,22 +412,6 @@ export function NotesTab({
               </button>
             </div>
           ))}
-        </div>
-      )}
-
-      {content.length === 0 && (
-        <div
-          className="mt-4 text-center"
-          style={{
-            fontFamily: 'var(--font-family)',
-            fontSize: 13,
-            color: 'var(--text-tertiary)',
-            lineHeight: 1.6,
-          }}
-        >
-          A scratchpad for quick thoughts across all documents.
-          <br /><br />
-          Type <span style={{ color: 'var(--accent)' }}>/DocumentName</span> at the start of a line to tag a note for transfer to that document's research.
         </div>
       )}
     </div>
