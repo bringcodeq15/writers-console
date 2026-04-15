@@ -82,6 +82,12 @@ export default function App() {
   const searchProvider = getSetting('searchProvider', 'brave');
   const fontFamily = getSetting('fontFamily', 'charter');
   const theme = getSetting('theme', 'dark');
+  const lineSpacing = getSetting('lineSpacing', '1.7');
+
+  // Apply line spacing
+  useEffect(() => {
+    document.documentElement.style.setProperty('--editor-line-height', lineSpacing);
+  }, [lineSpacing]);
 
   // Apply font to CSS custom property
   useEffect(() => {
@@ -247,20 +253,41 @@ export default function App() {
     (fromPid: string, toPid: string) => {
       const editor = editorRef.current;
       if (!editor) return;
-      const { doc, tr } = editor.state;
+      if (fromPid === toPid) return;
+      const { doc } = editor.state;
       let fromPos = -1;
       let fromEnd = -1;
+      let fromNode: import('@tiptap/pm/model').Node | null = null;
       let toPos = -1;
+      let toEnd = -1;
       doc.descendants((node, pos) => {
-        if (node.attrs.pid === fromPid) { fromPos = pos; fromEnd = pos + node.nodeSize; }
-        if (node.attrs.pid === toPid) { toPos = pos; }
+        if (node.attrs.pid === fromPid) {
+          fromPos = pos;
+          fromEnd = pos + node.nodeSize;
+          fromNode = node;
+        }
+        if (node.attrs.pid === toPid) {
+          toPos = pos;
+          toEnd = pos + node.nodeSize;
+        }
       });
-      if (fromPos === -1 || toPos === -1) return;
-      const slice = doc.slice(fromPos, fromEnd);
-      const deleteTr = tr.delete(fromPos, fromEnd);
-      const mappedPos = deleteTr.mapping.map(toPos);
-      deleteTr.insert(mappedPos, slice.content);
-      editor.view.dispatch(deleteTr);
+      if (fromPos === -1 || toPos === -1 || !fromNode) return;
+
+      const movingDown = fromPos < toPos;
+      const tr = editor.state.tr;
+
+      // Delete the source node first
+      tr.delete(fromPos, fromEnd);
+
+      // Compute where to insert (after deletion)
+      // If moving down, insert after the target (so it lands below the visible target)
+      // If moving up, insert before the target (so it lands above)
+      const insertAt = movingDown
+        ? tr.mapping.map(toEnd)
+        : tr.mapping.map(toPos);
+
+      tr.insert(insertAt, fromNode);
+      editor.view.dispatch(tr);
     },
     []
   );
@@ -657,6 +684,7 @@ export default function App() {
           searchProvider={searchProvider}
           fontFamily={fontFamily}
           theme={theme}
+          lineSpacing={lineSpacing}
           diskEnabled={isElectron}
           onSave={setSetting}
           onPickDirectory={() => {}}

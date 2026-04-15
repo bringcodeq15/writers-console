@@ -17,6 +17,7 @@ import type { Editor } from '@tiptap/react';
 import type { ScaffoldEntry, ResearchItem, ResearchSuggestion } from '../../db';
 import { ScaffoldLine } from './ScaffoldLine';
 import { SuggestionPopover } from '../SuggestionPopover';
+import { FlowAnalysisPanel } from './FlowAnalysisPanel';
 
 interface ScaffoldTabProps {
   editor: Editor | null;
@@ -161,6 +162,12 @@ export function ScaffoldTab({
       >
         AI Scaffold
       </div>
+
+      <FlowAnalysisPanel
+        apiKey={apiKey}
+        entries={entries}
+        onJumpToParagraph={handleClickLine}
+      />
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext

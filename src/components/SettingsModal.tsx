@@ -4,6 +4,7 @@ interface SettingsModalProps {
   searchProvider: string;
   fontFamily: string;
   theme: string;
+  lineSpacing: string;
   diskEnabled: boolean;
   onSave: (key: string, value: string) => void;
   onPickDirectory: () => void;
@@ -40,6 +41,7 @@ export function SettingsModal({
   searchProvider,
   fontFamily,
   theme,
+  lineSpacing,
   diskEnabled,
   onSave,
   onPickDirectory,
@@ -115,6 +117,43 @@ export function SettingsModal({
                   }}
                 />
                 {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Line Spacing */}
+        <div className="mb-6">
+          <label style={labelStyle}>Line Spacing</label>
+          <div className="flex gap-2">
+            {[
+              { value: '1.3', label: 'Tight', sample: '1.3' },
+              { value: '1.5', label: 'Normal', sample: '1.5' },
+              { value: '1.7', label: 'Relaxed', sample: '1.7' },
+              { value: '2.0', label: 'Double', sample: '2.0' },
+            ].map((s) => (
+              <button
+                key={s.value}
+                onClick={() => onSave('lineSpacing', s.value)}
+                style={{
+                  flex: 1,
+                  fontFamily: 'var(--font-family)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: lineSpacing === s.value ? 'var(--accent)' : 'var(--text-primary)',
+                  background: lineSpacing === s.value ? 'var(--accent-faint)' : 'var(--bg-primary)',
+                  border:
+                    lineSpacing === s.value
+                      ? '1px solid var(--accent-dim)'
+                      : '1px solid var(--border-emphasis)',
+                  borderRadius: 2,
+                  padding: '8px 6px',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 2 }}>{s.sample}×</div>
+                {s.label}
               </button>
             ))}
           </div>

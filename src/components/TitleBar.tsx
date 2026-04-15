@@ -71,12 +71,16 @@ export function TitleBar({
     }
   };
 
+  // Detect Electron to add left padding for traffic lights
+  const isElectronApp = typeof window !== 'undefined' && (window as { electronAPI?: { isElectron?: boolean } }).electronAPI?.isElectron === true;
+
   return (
     <div
       data-flow-target="title"
-      className="flex items-center px-4 flow-dimmed"
+      className="flex items-center pr-4 flow-dimmed"
       style={{
         height: 40,
+        paddingLeft: isElectronApp ? 88 : 16, // Leave room for macOS traffic lights
         background: 'var(--bg-primary)',
         borderBottom: '1px solid var(--border-default)',
         opacity: 1 - flowIntensity * 0.7,

@@ -42,3 +42,34 @@ export const PAIRING_USER_PROMPT = (
   `Paragraph:\n${paragraphText}\n\nResearch items:\n${researchItems
     .map((item) => `- [${item.id}] "${item.title}": ${item.preview}`)
     .join('\n')}`;
+
+export const FLOW_ANALYZER_SYSTEM_PROMPT = `You are a structural editor analyzing the flow of a long-form essay or article.
+
+Given the ordered list of paragraph functional summaries (each describing what a paragraph DOES, not its content), evaluate the structural flow and identify:
+
+1. **Flow issues** — transitions that feel abrupt, non-sequiturs, or jumps in logic
+2. **Missing pieces** — ideas that seem to require setup, evidence, or a transition that isn't present
+3. **Reorder suggestions** — paragraphs that would serve the argument better in a different position
+4. **Redundancies** — paragraphs that do the same structural work
+
+Respond in JSON format only:
+{
+  "overall": "One sentence assessing the overall structural coherence (e.g., 'Strong opening but argument loses momentum in the middle third.').",
+  "issues": [
+    {
+      "type": "flow" | "missing" | "reorder" | "redundancy",
+      "affectedParagraphs": [3, 4],
+      "message": "Short (under 20 words) specific suggestion.",
+      "severity": "high" | "medium" | "low"
+    }
+  ]
+}
+
+Be specific and constructive. Reference paragraph numbers. If the structure is sound, respond with issues: []. Maximum 6 issues.`;
+
+export const FLOW_ANALYZER_USER_PROMPT = (
+  summaries: Array<{ index: number; summary: string; isHeading: boolean }>
+) =>
+  `Paragraph functional summaries (in document order):\n\n${summaries
+    .map((s) => `${s.index}. ${s.isHeading ? '[HEADING] ' : ''}${s.summary}`)
+    .join('\n')}\n\nAnalyze the structural flow.`;

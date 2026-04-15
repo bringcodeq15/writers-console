@@ -34,9 +34,17 @@ export function ScaffoldLine({
         style={{
           cursor: 'grab',
           color: 'var(--text-tertiary)',
-          fontSize: 10,
+          fontSize: 14,
           userSelect: 'none',
+          padding: '6px 8px',
+          marginLeft: -4,
+          borderRadius: 2,
+          display: 'inline-flex',
+          alignItems: 'center',
+          touchAction: 'none',
+          flexShrink: 0,
         }}
+        title="Drag to reorder paragraph"
       >
         &#9776;
       </span>
